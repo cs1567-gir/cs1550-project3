@@ -1,0 +1,14 @@
+BZIP results
+
+'OPT'
+Number of frames: 8
+Total memory accesses: 1000000
+Total page faults: 626041
+Total writes to disk: 117834
+
+
+RAND
+Number of frames: 8
+Total memory accesses: 1000000
+Total page faults: 44327
+Total writes to disk: 16430

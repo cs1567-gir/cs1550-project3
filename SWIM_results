@@ -1,0 +1,13 @@
+SWIM
+
+OPT:
+Number of frames: 8
+Total memory accesses: 1000000
+Total page faults: 171244
+Total writes to disk: 46452
+
+RAND:
+Number of frames: 8
+Total memory accesses: 1000000
+Total page faults: 320833
+Total writes to disk: 54375
