@@ -73,12 +73,24 @@ void set_referenced(uint32_t *pt, uint32_t page_num){
 	pt[page_num] = pt[page_num] | 1<<REFERENCED_BIT;
 }
 
+void unset_referenced(uint32_t * pt, uint32_t page_num){
+    uint32_t mask = 1 << REFERENCED_BIT;
+    mask = ~mask;
+    pt[page_num] = pt[page_num] & mask;
+}
+
 void clear_status_bits(uint32_t *pt, uint32_t page_num){
 	uint32_t mask = 7<<VALID_BIT;
 	mask = ~mask;
 	pt[page_num] = pt[page_num] & mask;
 }
 
+void reset_all_reference_bits(uint32_t * pt, uint32_t * ram, int valid){
+    int i;
+    for(i = 0; i < valid; i++){
+        unset_referenced(pt, ram[i]);
+    }
+}
 
 /**
  * opt_sim
@@ -245,12 +257,13 @@ void rand_sim(struct memory_reference *instructions, uint32_t count, uint32_t *p
 
 
 
-void nru_sim(struct memory_reference * instructions, uint32_t count uint32_t *pt, int pages, int frames, int period)
+void nru_sim(struct memory_reference * instructions, uint32_t count, uint32_t *pt, int pages, int frames, int period)
 {
     // algorithm: at page fault, look for a page that is unreferenced and clean
     // every <period> instructions, reset all referenced bits to zero 
     uint32_t i, j;
     uint32_t * ram;
+    uint32_t page_number;
     int to_evict;
     int valid_pages;
     valid_pages = 0;
@@ -263,7 +276,7 @@ void nru_sim(struct memory_reference * instructions, uint32_t count uint32_t *pt
 
     for(i = 0; i < count; i++){
         if(i % period == 0){
-            reset_all_reference_bits(pt, ram);
+            reset_all_reference_bits(pt, ram, valid_pages);
         }
         page_number = instructions[i].address >> 12;
         if(!is_valid(pt, page_number)){ // not in memory
@@ -284,6 +297,7 @@ void nru_sim(struct memory_reference * instructions, uint32_t count uint32_t *pt
                 while(j < frames && (is_referenced(pt, ram[j]) || is_dirty(pt, ram[j]))){
                     if(!is_referenced(pt, ram[j])){
                         to_evict = j;
+                    }
                     j++;  
                 }
                 if(j < frames){ // we found an unreferenced and clean frame
@@ -317,7 +331,6 @@ void nru_sim(struct memory_reference * instructions, uint32_t count uint32_t *pt
                 set_referenced(pt, page_number);
                 if(instructions[i].mode = 'W'){
                     set_dirty(pt, page_number);
-                    writes++;
                 }
             }
         } else {
@@ -404,7 +417,7 @@ int main(int argc, char *argv[])
     } else if(strcmp(algorithm, "rand") == 0) {
     	rand_sim(instructions, instruction_count, page_table, pages, frames);
     } else if(strcmp(algorithm, "nru") == 0) {
-    	//nru_sim(infile);
+    	nru_sim(instructions, instruction_count, page_table, pages, frames, refresh_rate);
     } else if(strcmp(algorithm, "aging") == 0) {
     	//aging_sim(infile);
     } else {
