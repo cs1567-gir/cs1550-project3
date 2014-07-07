@@ -74,7 +74,8 @@ void set_referenced(uint32_t *pt, uint32_t page_num){
 }
 
 void unset_referenced(uint32_t * pt, uint32_t page_num){
-    uint32_t mask = 1 << REFERENCED_BIT;
+    uint32_t mask;
+    mask = 1<<REFERENCED_BIT;
     mask = ~mask;
     pt[page_num] = pt[page_num] & mask;
 }
@@ -88,7 +89,9 @@ void clear_status_bits(uint32_t *pt, uint32_t page_num){
 void reset_all_reference_bits(uint32_t * pt, uint32_t * ram, int valid){
     int i;
     for(i = 0; i < valid; i++){
-        unset_referenced(pt, ram[i]);
+        if(is_referenced(pt, ram[i])){
+            unset_referenced(pt, ram[i]);
+        }
     }
 }
 
@@ -253,6 +256,7 @@ void rand_sim(struct memory_reference *instructions, uint32_t count, uint32_t *p
     printf("Total memory accesses: %i\n", i);
     printf("Total page faults: %i\n", faults);
     printf("Total writes to disk: %i\n", writes);
+    free(ram);
 }
 
 
@@ -276,12 +280,14 @@ void nru_sim(struct memory_reference * instructions, uint32_t count, uint32_t *p
 
     for(i = 0; i < count; i++){
         if(i % period == 0){
+            printf("DEBUG: RESETTING R BITS\n");
             reset_all_reference_bits(pt, ram, valid_pages);
         }
         page_number = instructions[i].address >> 12;
         if(!is_valid(pt, page_number)){ // not in memory
             faults++;
             if(valid_pages < frames){ // we have an open frame, just put it there
+                printf("%i. page fault - no eviction\n", i);
                 ram[valid_pages] = page_number;
                 set_valid(pt, page_number);
                 set_referenced(pt, page_number);
@@ -293,15 +299,16 @@ void nru_sim(struct memory_reference * instructions, uint32_t count, uint32_t *p
                 to_evict = -1;
                 j = 0;
                 // we need to swap
-                // iterate through valid pages, store which have zeros in ref and dirty
+                // iterate through valid pages
                 while(j < frames && (is_referenced(pt, ram[j]) || is_dirty(pt, ram[j]))){
                     if(!is_referenced(pt, ram[j])){
                         to_evict = j;
                     }
-                    j++;  
+                    j++;
                 }
                 if(j < frames){ // we found an unreferenced and clean frame
                     to_evict = j;
+                    //printf("DEBUG: R=0 D=0\n");
                     printf("%i. page fault - evict clean\n", i);
                 } else if(to_evict == -1){
                     // no unreferenced frames, look for a clean referenced frame
@@ -312,15 +319,18 @@ void nru_sim(struct memory_reference * instructions, uint32_t count, uint32_t *p
                     if(j == frames){
                         //all frames referenced and dirty
                         to_evict = 0;
+                        //printf("DEBUG: R=1 D=1\n");
                         printf("%i. page fault - evict dirty\n", i);
                         writes++;
                     } else {
                         // we found a referenced but clean frame
                         to_evict = j;
+                        //printf("DEBUG: R=1 D=0\n");
                         printf("%i. page fault - evict clean\n", i);
                     }
                 } else {
                     // unreferenced but dirty - to_evict already set
+                    //printf("DEBUG: R=0 D=1\n");
                     printf("%i. page fault - evict dirty\n", i);
                     writes++;
                 }
@@ -329,7 +339,7 @@ void nru_sim(struct memory_reference * instructions, uint32_t count, uint32_t *p
                 ram[to_evict] = page_number;
                 set_valid(pt, page_number);
                 set_referenced(pt, page_number);
-                if(instructions[i].mode = 'W'){
+                if(instructions[i].mode == 'W'){
                     set_dirty(pt, page_number);
                 }
             }
@@ -337,7 +347,7 @@ void nru_sim(struct memory_reference * instructions, uint32_t count, uint32_t *p
             // hit
             printf("%i. hit\n", i);
             set_referenced(pt, page_number);
-            if(instructions[i].mode = 'W'){
+            if(instructions[i].mode == 'W'){
                 set_dirty(pt, page_number);
             }
         }
@@ -346,6 +356,7 @@ void nru_sim(struct memory_reference * instructions, uint32_t count, uint32_t *p
     printf("Total memory accesses: %i\n", i);
     printf("Total page faults: %i\n", faults);
     printf("Total writes to disk: %i\n", writes);
+    free(ram);
 }
 
 void aging_sim(FILE *fp, uint32_t *pt, int pages, int frames, int period)
@@ -385,9 +396,10 @@ int main(int argc, char *argv[])
 
     if(argc > 6) {
     	refresh_rate = atoi(argv[6]);
+        trace_file = argv[7];
+    } else {
+        trace_file = argv[5];
     }
-
-    trace_file = argv[argc - 1];
 
     // get file size to determine how many instructions we have
     stat(trace_file, &buf);

@@ -9,8 +9,8 @@ Total writes to disk: 7582
 NRU
 Number of frames: 8
 Total memory accesses: 1000000
-Total page faults: 34123
-Total writes to disk: 68230
+Total page faults: 32558
+Total writes to disk: 8863
 
 RAND
 Number of frames: 8
