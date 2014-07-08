@@ -204,6 +204,7 @@ void opt_sim(struct memory_reference *instructions, uint32_t count, uint32_t *pt
     printf("Total memory accesses: %i\n", i);
     printf("Total page faults: %i\n", faults);
     printf("Total writes to disk: %i\n", writes);
+    printf("%i,%i,%i\n", frames, faults, writes);
 }
 
 void rand_sim(struct memory_reference *instructions, uint32_t count, uint32_t *pt, int pages, int frames)
@@ -261,6 +262,7 @@ void rand_sim(struct memory_reference *instructions, uint32_t count, uint32_t *p
     printf("Total memory accesses: %i\n", i);
     printf("Total page faults: %i\n", faults);
     printf("Total writes to disk: %i\n", writes);
+    printf("%i,%i,%i\n", frames, faults, writes);
     free(ram);
 }
 
@@ -353,6 +355,7 @@ void nru_sim(struct memory_reference * instructions, uint32_t count, uint32_t *p
     printf("Total memory accesses: %i\n", i);
     printf("Total page faults: %i\n", faults);
     printf("Total writes to disk: %i\n", writes);
+    printf("%i, %i, %i, %i\n", period, frames, faults, writes);
     free(ram);
 }
 
@@ -434,6 +437,7 @@ void aging_sim(struct memory_reference * instructions, uint32_t count, uint32_t 
     printf("Total memory accesses: %i\n", i);
     printf("Total page faults: %i\n", faults);
     printf("Total writes to disk: %i\n", writes);
+    printf("%i,%i,%i,%i\n", period, frames, faults, writes);
     free(ipt);
 }
 
@@ -511,5 +515,4 @@ int main(int argc, char *argv[])
     fclose(infile);
     free(instructions);
     free(page_table);
-    printf("DONE.\n");
 }
