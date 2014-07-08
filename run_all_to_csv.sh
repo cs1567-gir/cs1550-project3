@@ -19,16 +19,18 @@ do
 				rm $TRACEFILE.$frames.$ALGORITHM.txt
 			done
 		else
-			echo "PERIOD, FRAMES, PAGE FAULTS, DISK WRITES" >> $TRACEFILE.$ALGORITHM.csv
 			for frames in 8 16 32 64 128
 			do
+				period=10
+				echo "PERIOD, FRAMES, PAGE FAULTS, DISK WRITES" >> $TRACEFILE.$frames.$ALGORITHM.coarse.csv
                                 echo "    -- Frames: $frames --"
-				for period in 25 50 100 150 200 250 300 350 400 450 500 550 600 650 700 750 800 850 900 950 1000 
+				while [ $period -le 10000 ]
 				do
 					echo "      -- Period: $period --"
 					./vmsim -n $frames -a $ALGORITHM -r $period $TRACEFILE.trace > $TRACEFILE.$frames.$ALGORITHM.$period.txt
-					tail -n 1 $TRACEFILE.$frames.$ALGORITHM.$period.txt >> $TRACEFILE.$ALGORITHM.csv
+					tail -n 1 $TRACEFILE.$frames.$ALGORITHM.$period.txt >> $TRACEFILE.$frames.$ALGORITHM.coarse.csv
 					rm $TRACEFILE.$frames.$ALGORITHM.$period.txt
+					period=$(( period + 10 ))
 				done
 			done
 		fi
