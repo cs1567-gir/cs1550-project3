@@ -174,10 +174,7 @@ void opt_sim(struct memory_reference *instructions, uint32_t count, uint32_t *pt
         		// update page table
                 //pt[page_number] = max;
                 activate_page(pt, page_number, max, instructions[i].mode);
-        		//set_valid(pt, page_number);
-        		//if(instructions[i].mode == 'W'){
-        		//	set_dirty(pt, page_number);
-        		//}
+
         	} else {														// else there are still free frames
                 printf("%i. page fault - no eviction\n", i);
         		valid_pages[next_frame].page_number = page_number;
@@ -185,11 +182,6 @@ void opt_sim(struct memory_reference *instructions, uint32_t count, uint32_t *pt
                 printf("next reference: %u\n", valid_pages[next_frame].next_reference);
  
         		// update page table
-                //pt[page_number] = next_frame;
-        		//set_valid(pt, page_number);
-        		//if(instructions[i].mode == 'W'){
-        		//	set_dirty(pt, page_number);
-        		//}
                 activate_page(pt, page_number, next_frame, instructions[i].mode);
         		// increase valid page counter
         		next_frame++;
@@ -239,11 +231,6 @@ void rand_sim(struct memory_reference *instructions, uint32_t count, uint32_t *p
         		// just put page at end
                 ram[valid_pages] = page_number;
                 printf("%i. page fault - no eviction\n", i);
-                //pt[page_number] = valid_pages;
-                //set_valid(pt, page_number);
-                //if(instructions[i].mode == 'W'){
-                //    set_dirty(pt, page_number);
-                //}
                 activate_page(pt, page_number, valid_pages, instructions[i].mode);
                 valid_pages++;
         	} else {
@@ -260,11 +247,6 @@ void rand_sim(struct memory_reference *instructions, uint32_t count, uint32_t *p
             	}
                 clear_status_bits(pt, ram[to_evict]);
                 ram[to_evict] = page_number;
-                //pt[page_number] = to_evict;
-                //set_valid(pt, page_number);
-                //if(instructions[i].mode == 'W'){
-                //    set_dirty(pt, page_number);
-                //}
                 activate_page(pt, page_number, to_evict, instructions[i].mode);
         	}
     	} else {
@@ -312,11 +294,6 @@ void nru_sim(struct memory_reference * instructions, uint32_t count, uint32_t *p
             if(valid_pages < frames){ // we have an open frame, just put it there
                 printf("%i. page fault - no eviction\n", i);
                 ram[valid_pages] = page_number;
-                //set_valid(pt, page_number);
-                //set_referenced(pt, page_number);
-                //if(instructions[i].mode == 'W'){
-                //    set_dirty(pt, page_number);
-                //}
                 activate_page(pt, page_number, valid_pages, instructions[i].mode);
                 valid_pages++;
             } else {
@@ -361,11 +338,6 @@ void nru_sim(struct memory_reference * instructions, uint32_t count, uint32_t *p
                 //evict ram[to_evict]
                 clear_status_bits(pt, ram[to_evict]);
                 ram[to_evict] = page_number;
-                //set_valid(pt, page_number);
-                //set_referenced(pt, page_number);
-                //if(instructions[i].mode == 'W'){
-                //    set_dirty(pt, page_number);
-                //}
                 activate_page(pt, page_number, to_evict, instructions[i].mode);
             }
         } else {
