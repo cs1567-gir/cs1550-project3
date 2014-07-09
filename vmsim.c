@@ -1,3 +1,11 @@
+/**
+ * File: vmsim.c
+ * Author: Charles Kiorpes
+ * Date: July 8th, 2014
+ * cs1550 - Project 3
+ */
+
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -52,13 +60,12 @@ int is_referenced(uint32_t *pt, uint32_t page) {
     return referenced;
 }
 
-// find next time a
+// find next time a page is referenced in the array of instructions in memory
 uint32_t find_next_reference(uint32_t page_num, struct memory_reference *instructions, uint32_t count, uint32_t start){
 	uint32_t i;
 	uint32_t retVal = NEVER_REFERENCED;
 	for(i = start; i < count; i++){
 		if((instructions[i].address>>12) == page_num){
-			//printf("page %u's next reference: %u\n", page_num, i);
 			retVal = i;
 			break;
 		}
@@ -66,18 +73,23 @@ uint32_t find_next_reference(uint32_t page_num, struct memory_reference *instruc
     return retVal;
 }
 
+
+// set the given page number to valid in the page table
 void set_valid(uint32_t *pt, uint32_t page_num){
 	pt[page_num] = pt[page_num] | 1<<VALID_BIT;
 }
 
+// set the given page number to dirty in the page table
 void set_dirty(uint32_t *pt, uint32_t page_num){
 	pt[page_num] = pt[page_num] | 1<<DIRTY_BIT;
 }
 
+// set the given page number to referenced in the page table
 void set_referenced(uint32_t *pt, uint32_t page_num){
 	pt[page_num] = pt[page_num] | 1<<REFERENCED_BIT;
 }
 
+// unset the R bit of the given page number
 void unset_referenced(uint32_t * pt, uint32_t page_num){
     uint32_t mask;
     mask = 1<<REFERENCED_BIT;
@@ -85,12 +97,14 @@ void unset_referenced(uint32_t * pt, uint32_t page_num){
     pt[page_num] = pt[page_num] & mask;
 }
 
+// clear R, D, and V bits for the given page number
 void clear_status_bits(uint32_t *pt, uint32_t page_num){
 	uint32_t mask = 7<<VALID_BIT;
 	mask = ~mask;
 	pt[page_num] = pt[page_num] & mask;
 }
 
+// clear ALL R bits for each valid page
 void reset_all_reference_bits(uint32_t * pt, uint32_t * ram, int valid){
     int i;
     for(i = 0; i < valid; i++){
@@ -98,6 +112,7 @@ void reset_all_reference_bits(uint32_t * pt, uint32_t * ram, int valid){
     }
 }
 
+// clear ALL R bits for each valid page (aging specific due to struct)
 void reset_all_reference_bits_aging(uint32_t * pt, struct aging_frame * ipt, int valid){
     int i;
     for(i = 0; i < valid; i++){
@@ -105,11 +120,12 @@ void reset_all_reference_bits_aging(uint32_t * pt, struct aging_frame * ipt, int
     }
 }
 
+// perform the necessary actions when loading a page into RAM
 void activate_page(uint32_t * pt, uint32_t page_number, uint32_t frame_number, char mode){
-    pt[page_number] = frame_number;
-    set_valid(pt, page_number);
-    set_referenced(pt, page_number);
-    if(mode == 'W'){
+    pt[page_number] = frame_number;     // store frame number in page table
+    set_valid(pt, page_number);         // set the page to valid
+    set_referenced(pt, page_number);    // set the page to referenced
+    if(mode == 'W'){                    // if this is a write, set the page to dirty
         set_dirty(pt, page_number);
     }
 }
@@ -207,6 +223,11 @@ void opt_sim(struct memory_reference *instructions, uint32_t count, uint32_t *pt
     printf("%i,%i,%i\n", frames, faults, writes);
 }
 
+/**
+ * rand_sim: simulates the RAND page replacement algorithm
+ * iterates through the list of memory references.  when a page needs to be swapped in,
+ *  this algorithm picks a frame at random to evict
+ */
 void rand_sim(struct memory_reference *instructions, uint32_t count, uint32_t *pt, int pages, int frames)
 {
 	uint32_t page_number;
@@ -267,7 +288,13 @@ void rand_sim(struct memory_reference *instructions, uint32_t count, uint32_t *p
 }
 
 
-
+/**
+ * nru_sim: simulates the NRU page replacement algorithm
+ * iterates through the list of memory references.
+ * Every <period> instructions, all R bits for valid pages are reset
+ * NRU prefers the page that is unreferenced and clean, then unreferenced and dirty,
+ *     then referenced and clean, and finally referenced and dirty
+ */
 void nru_sim(struct memory_reference * instructions, uint32_t count, uint32_t *pt, int pages, int frames, int period)
 {
     // algorithm: at page fault, look for a page that is unreferenced and clean
@@ -311,7 +338,6 @@ void nru_sim(struct memory_reference * instructions, uint32_t count, uint32_t *p
                 }
                 if(j < frames){ // we found an unreferenced and clean frame
                     to_evict = j;
-                    //printf("DEBUG: R=0 D=0\n");
                     printf("%i. page fault - evict clean\n", i);
                 } else if(to_evict == -1){
                     // no unreferenced frames, look for a clean referenced frame
@@ -322,18 +348,15 @@ void nru_sim(struct memory_reference * instructions, uint32_t count, uint32_t *p
                     if(j == frames){
                         //all frames referenced and dirty
                         to_evict = 0;
-                        //printf("DEBUG: R=1 D=1\n");
                         printf("%i. page fault - evict dirty\n", i);
                         writes++;
                     } else {
                         // we found a referenced but clean frame
                         to_evict = j;
-                        //printf("DEBUG: R=1 D=0\n");
                         printf("%i. page fault - evict clean\n", i);
                     }
                 } else {
                     // unreferenced but dirty - to_evict already set
-                    //printf("DEBUG: R=0 D=1\n");
                     printf("%i. page fault - evict dirty\n", i);
                     writes++;
                 }
@@ -359,6 +382,11 @@ void nru_sim(struct memory_reference * instructions, uint32_t count, uint32_t *p
     free(ram);
 }
 
+
+/**
+ * aging_sim: simulates the AGING algorithm.
+ * This algorithm uses an extra 8-bit number to store a short, imprecise history of a page in memory
+ */
 void aging_sim(struct memory_reference * instructions, uint32_t count, uint32_t *pt, int pages, int frames, int period)
 {
     struct aging_frame * ipt;
@@ -441,6 +469,10 @@ void aging_sim(struct memory_reference * instructions, uint32_t count, uint32_t 
     free(ipt);
 }
 
+
+/**
+ * main: parses command line arguments and runs the correct algorithm
+ */
 int main(int argc, char *argv[])
 {
     FILE *infile;
@@ -451,7 +483,7 @@ int main(int argc, char *argv[])
     char *trace_file;
 
     uint32_t *page_table; 
-    uint32_t pages;   				// 2^32 / 2^12 = 2^20
+    uint32_t pages;
     pages = 1<<20;
 
     uint32_t i;
@@ -494,6 +526,7 @@ int main(int argc, char *argv[])
     // construct head of list
     instructions = malloc(instruction_count * sizeof(struct memory_reference));
 
+    // preload the instructions into memory to speed up processing
     printf("Loading instruction list into memory...\n");
     for(i = 0; i < instruction_count; i++){
     	fscanf(infile, "%x %c", &address, &mode);
@@ -501,6 +534,7 @@ int main(int argc, char *argv[])
     	instructions[i].mode = mode;
     }
 
+    // pick the correct algorithm
     if(strcmp(algorithm, "opt") == 0){
         opt_sim(instructions, instruction_count, page_table, pages, frames);
     } else if(strcmp(algorithm, "rand") == 0) {
@@ -510,7 +544,7 @@ int main(int argc, char *argv[])
     } else if(strcmp(algorithm, "aging") == 0) {
     	aging_sim(instructions, instruction_count, page_table, pages, frames, refresh_rate);
     } else {
-    	// print usage
+    	printf("usage: ./vmsim -n <frames> -a <algorithm> [ -r <refresh_period> ] <tracefile>\n");
     }
     fclose(infile);
     free(instructions);

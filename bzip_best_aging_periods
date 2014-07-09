@@ -1,0 +1,11 @@
+FRAMES, PERIOD
+8, 360 (optimized for page faults) OR 800 (for balance of PFs to DWs)
+16, 500
+32, 900
+64, 900
+128, 1100
+
+
+for one set period overall, 900 would be a decent choice
+
+

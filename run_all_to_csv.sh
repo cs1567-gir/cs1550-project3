@@ -24,7 +24,7 @@ do
 				period=10
 				echo "PERIOD, FRAMES, PAGE FAULTS, DISK WRITES" >> $TRACEFILE.$frames.$ALGORITHM.coarse.csv
                                 echo "    -- Frames: $frames --"
-				while [ $period -le 10000 ]
+				while [ $period -le 5000 ]
 				do
 					echo "      -- Period: $period --"
 					./vmsim -n $frames -a $ALGORITHM -r $period $TRACEFILE.trace > $TRACEFILE.$frames.$ALGORITHM.$period.txt
